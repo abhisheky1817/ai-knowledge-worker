@@ -1,19 +1,29 @@
-// Thin wrapper around the REST API. Every function throws an Error with a readable message.
+
+const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+
 async function request(path, options = {}) {
   let res;
+
   try {
-    res = await fetch(`/api${path}`, options);
+    res = await fetch(`${API_BASE_URL}/api${path}`, options);
   } catch {
-    throw new Error('Cannot reach the server. Is the backend running on port 3001?');
+    throw new Error('Cannot reach the server. Please check your internet connection or backend status.');
   }
+
   if (res.status === 204) return null;
+
   let body = null;
+
   try {
     body = await res.json();
   } catch {
-    /* non-JSON error page */
+    // Ignore non-JSON error responses.
   }
-  if (!res.ok) throw new Error(body?.error || `Request failed (${res.status})`);
+
+  if (!res.ok) {
+    throw new Error(body?.error || `Request failed (${res.status})`);
+  }
+
   return body;
 }
 
@@ -21,17 +31,29 @@ export const api = {
   health: () => request('/health'),
   listDocuments: () => request('/documents'),
   getDocument: (id) => request(`/documents/${id}`),
+
   uploadDocument: (file) => {
     const form = new FormData();
     form.append('file', file);
-    return request('/documents', { method: 'POST', body: form });
+    return request('/documents', {
+      method: 'POST',
+      body: form,
+    });
   },
-  reprocessDocument: (id) => request(`/documents/${id}/reprocess`, { method: 'POST' }),
-  deleteDocument: (id) => request(`/documents/${id}`, { method: 'DELETE' }),
+
+  reprocessDocument: (id) =>
+    request(`/documents/${id}/reprocess`, { method: 'POST' }),
+
+  deleteDocument: (id) =>
+    request(`/documents/${id}`, { method: 'DELETE' }),
+
   ask: (question, documentId) =>
     request('/ask', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, documentId: documentId || undefined }),
+      body: JSON.stringify({
+        question,
+        documentId: documentId || undefined,
+      }),
     }),
 };
