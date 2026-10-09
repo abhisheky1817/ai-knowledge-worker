@@ -1,0 +1,46 @@
+// AI Knowledge Worker - database schema
+// Vector column uses pgvector (768 dimensions = Gemini embedding output size).
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "client" // Rust-free client; uses the pg driver adapter (see src/lib/prisma.js)
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DocumentStatus {
+  PROCESSING
+  READY
+  FAILED
+}
+
+model Document {
+  id         String         @id @default(uuid())
+  title      String
+  fileName   String
+  fileType   String // pdf | txt | md
+  sizeBytes  Int
+  status     DocumentStatus @default(PROCESSING)
+  error      String?
+  content    String         @db.Text // cleaned text, kept so a document can be re-processed
+  chunkCount Int            @default(0)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  chunks     Chunk[]
+}
+
+model Chunk {
+  id         String                 @id @default(uuid())
+  documentId String
+  document   Document               @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  chunkIndex Int
+  content    String                 @db.Text
+  charCount  Int
+  embedding  Unsupported("vector(768)")?
+  createdAt  DateTime               @default(now())
+
+  @@unique([documentId, chunkIndex])
+  @@index([documentId])
+}

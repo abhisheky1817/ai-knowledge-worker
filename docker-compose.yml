@@ -1,0 +1,23 @@
+# PostgreSQL 16 with the pgvector extension preinstalled.
+#   docker compose up -d
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: kw-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kw
+      POSTGRES_PASSWORD: kw
+      POSTGRES_DB: kwdb
+    ports:
+      - '5432:5432'
+    volumes:
+      - kw-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U kw -d kwdb']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  kw-pgdata:
