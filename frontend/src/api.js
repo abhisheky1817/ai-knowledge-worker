@@ -17,7 +17,6 @@ async function request(path, options = {}) {
   try {
     body = await res.json();
   } catch {
-    // Ignore non-JSON error responses.
   }
 
   if (!res.ok) {
